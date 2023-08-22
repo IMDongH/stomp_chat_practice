@@ -66,10 +66,16 @@
         },
         methods: {
             findRoom: function() {
-                axios.get('/chat/room/'+this.roomId).then(response => { this.room = response.data; });
+                axios.get('/chat/room/'+this.roomId).then(response => {
+                    this.room.name = response.data.roomName
+
+                    this.messages = response.data.messages;
+                console.log(response.data)});
             },
             sendMessage: function() {
+
                 ws.send("/app/chat/message", {}, JSON.stringify({type:'TALK', roomId:this.roomId, sender:this.sender, message:this.message}));
+                this.messages.append({sender:this.sender, message:this.message})
                 this.message = '';
             },
             recvMessage: function(recv) {
@@ -85,7 +91,7 @@
                 var recv = JSON.parse(message.body);
                 vm.recvMessage(recv);
             });
-            ws.send("/app/chat/message", {}, JSON.stringify({type:'ENTER', roomId:vm.$data.roomId, sender:vm.$data.sender}));
+            // ws.send("/app/chat/message", {}, JSON.stringify({type:'ENTER', roomId:vm.$data.roomId, sender:vm.$data.sender}));
         }, function(error) {
             if(reconnect++ <= 5) {
                 setTimeout(function() {

@@ -1,9 +1,12 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '2.7.14'
-	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
-//	// 2. querydsl plugins 추가
-//	id "com.ewerk.gradle.plugins.querydsl" version "1.0.10"
+//	id 'org.springframework.boot' version '2.7.14'
+	id 'org.springframework.boot' version '2.6.3'
+//	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+
+	// 2. querydsl plugins 추가
+	id "com.ewerk.gradle.plugins.querydsl" version "1.0.10"
 }
 
 group = 'practice'
@@ -24,6 +27,8 @@ repositories {
 }
 
 ext {
+	queryDslVersion = "5.0.0"
+
 	set('snippetsDir', file("build/generated-snippets"))
 }
 
@@ -31,8 +36,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-//	implementation "com.querydsl:querydsl-jpa:${queryDslVersion}"
-//	implementation "com.querydsl:querydsl-apt:${queryDslVersion}"
+	implementation "com.querydsl:querydsl-jpa:${queryDslVersion}"
+	implementation "com.querydsl:querydsl-apt:${queryDslVersion}"
 	implementation 'org.springframework.boot:spring-boot-starter-json'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
@@ -42,7 +47,8 @@ dependencies {
 	implementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 
-	runtimeOnly 'com.mysql:mysql-connector-j'
+//	runtimeOnly 'com.mysql:mysql-connector-j'
+	implementation 'mysql:mysql-connector-java:8.0.33'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	//websocket
@@ -70,43 +76,30 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
-//def generateQuerydslSources() {
-//	configurations {
-//		querydslapt
-//	}
-//
-//	sourceSets {
-//		main {
-//			java {
-//				srcDirs 'src/main/java'
-//				// srcDirs 내부 유형
-//				// srcDirs = ['src/path/to/java', 'src/path/to/kotlin', ...]
-//				targetDir 'build/generated'
-//				// targetDir 내부 유형
-//				// targetDir = 'build/generated'
-//			}
-//		}
-//	}
-//
-//	def querydslOutputDir = file("${buildDir}/generated/")
-//
-//	tasks.withType(JavaCompile) {
-//		options.annotationProcessorPath = configurations.compileClasspath
-//		if (options.compilerArgs == null) {
-//			options.compilerArgs = []
-//		}
-//		options.compilerArgs += [
-//				'-s', "${buildDir}/generated/",
-//				'-Aquerydsl.defaultPackage=com.example.demo'
-//		]
-//	}
-//
-//	tasks.register("generateQuerydsl", JavaCompile) {
-//		description = "Generate Querydsl query types"
-//		classpath = configurations.querydslapt
-//		source = sourceSets.main.java
-//		destinationDir = querydslOutputDir
-//	}
-//
-//	compileJava.dependsOn(generateQuerydsl)
-//}
+
+
+/*
+ * queryDSL 설정 추가
+ */
+// querydsl에서 사용할 경로 설정
+def querydslDir = "$buildDir/generated/querydsl"
+// JPA 사용 여부와 사용할 경로를 설정
+querydsl {
+	jpa = true
+	querydslSourcesDir = querydslDir
+}
+// build 시 사용할 sourceSet 추가
+sourceSets {
+	main.java.srcDir querydslDir
+}
+// querydsl 컴파일시 사용할 옵션 설정
+compileQuerydsl{
+	options.annotationProcessorPath = configurations.querydsl
+}
+// querydsl 이 compileClassPath 를 상속하도록 설정
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+	querydsl.extendsFrom compileClasspath
+}
